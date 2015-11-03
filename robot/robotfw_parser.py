@@ -61,8 +61,18 @@ library_keywords = {
             'Remove Values From List', 'Reverse List', 'Set List Value', 'Set To Dictionary', 'Should Contain Match',
             'Should Not Contain Match', 'Sort List'
             ],
+        'DateTime' : [
+            ],
         'Dialogs' : [
             'Execute Manual Step', 'Get Selection From User', 'Get Value From User', 'Pause Execution'
+            ],
+        'OperatingSystem' : [
+            ],
+        'Process' : [
+            ],
+        'Remote' : [
+            ],
+        'Screenshot' : [
             ],
         'String' : [
             'Convert To Lowercase', 'Convert To Uppercase', 'Decode Bytes To String', 'Encode String To Bytes',
@@ -72,24 +82,95 @@ library_keywords = {
             'Replace String Using Regexp', 'Should Be Byte String', 'Should Be Lowercase', 'Should Be String',
             'Should Be Titlecase', 'Should Be Unicode String', 'Should Be Uppercase', 'Should Not be String',
             'Split String', 'Split String From Right', 'Split String To Characters', 'Split To Lines'
+            ],
+        'Telnet' : [
+            ],
+        'XML' : [
             ]
         }
 
 
 class RobotFrameworkParser():
     
-    def __init__( self, filename, contents ):
+    def __init__(self, filename, contents, parent=None):
         self.filename_ = filename
+        self.parent_ = parent
 
-        self.defined_keywords_ = set()
-        self.defined_test_cases_ = set()
-        self.defined_variables_ = set()
-        self.imported_libraries_ = set()
+        self.defined_keywords = set()
+        self.defined_test_cases = set()
+        self.defined_variables = set()
 
-        self.defined_variables_.add('${EMPTY}')
-        self.imported_libraries_.add('BuiltIn')
+        self.imported_resources = set()
+        self.imported_libraries = set()
+
+        self.defined_variables.add('${EMPTY}')
+        self.defined_variables.add('${True}')
+        self.defined_variables.add('${False}')
+
+        self.imported_libraries.add('BuiltIn')
 
         self._parse(contents)
+
+
+    def has_imported_resource(self, path):
+        if path in self.imported_resources:
+            return True
+
+        if self.parent_:
+            return self.parent_.has_imported_resource(path)
+
+        return False
+
+
+    def _locate_resource(self, resource):
+        resource_dirs = resource.split(os.sep)
+        while resource_dirs and resource_dirs[0] == '..':
+            resource_dirs = resource_dirs[1:]
+
+        parent_dirs = self.filename_.split(os.sep)[0:-1]
+        resource_path = str(os.sep).join(resource_dirs)
+
+        while parent_dirs:
+            path = str(os.sep).join(parent_dirs) + os.sep + resource_path
+            if os.path.isfile(path):
+                return path
+
+            parent_dirs = parent_dirs[0:-1]
+
+        return None
+
+
+    def _import_resource(self, resource):
+        _logger.info('Importing resource {0} ...'.format(resource))
+        path = self._locate_resource(resource)
+        if path:
+            _logger.info('    ... located file at {0}'.format(path))
+
+            if not self.has_imported_resource(path):
+                try:
+                    contents = ''
+                    with open(path, 'r') as f:
+                        contents = f.read()
+
+                    self.imported_resources.add(path)
+                    parser = RobotFrameworkParser(path, contents, self)
+
+                    for tc in parser.defined_test_cases:
+                        self.defined_test_cases.add(tc)
+                    for kw in parser.defined_keywords:
+                        self.defined_keywords.add(kw)
+                    for v in parser.defined_variables:
+                        self.defined_variables.add(v)
+
+                    for l in parser.imported_libraries:
+                        self.imported_libraries.add(l)
+                    for r in parser.imported_resources:
+                        self.imported_resources.add(r)
+                except Exception as e:
+                    _logger.error('An exception was thrown when attempting to parse {0}: {1}'.format(path, e.message))
+
+            else:
+                _logger.info('    ... already imported. Skipping.')
 
 
     def _parse(self, contents):
@@ -105,8 +186,6 @@ class RobotFrameworkParser():
                         parts[p] = parts[p].strip()
                     filtered_lines.append(parts)
 
-        _logger.info('Filtered lines {0}'.format(filtered_lines))
-
         (table_name, filtered_lines) = self._skip_to_next_table(filtered_lines)
 
         while filtered_lines:
@@ -119,7 +198,8 @@ class RobotFrameworkParser():
             elif table_name == "Keywords":
                 filtered_lines = self._parse_keywords(filtered_lines)
 
-            (table_name, filtered_lines) = self._skip_to_next_table(filtered_lines)
+            if filtered_lines:
+                (table_name, filtered_lines) = self._skip_to_next_table(filtered_lines)
 
 
     def _parse_keywords(self, lines):
@@ -131,7 +211,7 @@ class RobotFrameworkParser():
 
             if first_cell_content:
                 _logger.info('Found keyword {0}'.format(first_cell_content))
-                self.defined_keywords_.add(first_cell_content)
+                self.defined_keywords.add(first_cell_content)
 
         return []
 
@@ -140,7 +220,7 @@ class RobotFrameworkParser():
         if len(setting) > 1:
             library_name = setting[1]
             _logger.info('Adding keywords from library {0}'.format(library_name))
-            self.imported_libraries_.add(library_name)
+            self.imported_libraries.add(library_name)
 
 
     def _parse_settings(self, lines):
@@ -152,7 +232,7 @@ class RobotFrameworkParser():
 
             if first_cell_content == 'Resource':
                 if len(lines[l]) > 1:
-                    _logger.info('Found imported resource {0} that we might want to parse as well. Later on ...'.format(lines[l][1]))
+                    self._import_resource(lines[l][1])
             elif first_cell_content == 'Library':
                 self._parse_library_setting(lines[l])
 
@@ -168,7 +248,7 @@ class RobotFrameworkParser():
 
             if first_cell_content:
                 _logger.info('Found test case {0}'.format(first_cell_content))
-                self.defined_test_cases_.add(first_cell_content)
+                self.defined_test_cases.add(first_cell_content)
 
         return []
 
@@ -182,7 +262,7 @@ class RobotFrameworkParser():
 
             if first_cell_content:
                 _logger.info('Adding variable {0}'.format(first_cell_content))
-                self.defined_variables_.add(first_cell_content)
+                self.defined_variables.add(first_cell_content)
 
 
     def _skip_to_next_table(self, lines):
@@ -244,20 +324,21 @@ class RobotFrameworkParser():
                 if columns[0].strip() == 'Library':
                     # TODO: Check that we are in a settings table
                     for lib in library_names:
-                        if lib not in self.imported_libraries_:
+                        if lib not in self.imported_libraries:
                             available_candidates.append({'name':lib, 'type':'L', 'class':'Library'})
                 else:
-                    for lib in self.imported_libraries_:
-                        keywords = library_keywords[lib]
-                        for kw in keywords:
-                            available_candidates.append({'name':kw, 'type':'K', 'class':lib})
+                    for lib in self.imported_libraries:
+                        if lib in library_keywords:
+                            keywords = library_keywords[lib]
+                            for kw in keywords:
+                                available_candidates.append({'name':kw, 'type':'K', 'class':lib})
 
-                    for kw in self.defined_keywords_:
+                    for kw in self.defined_keywords:
                         available_candidates.append({'name':kw, 'type':'k', 'class':'user defined'})
 
 
             if table_column > 1:
-                for variable in self.defined_variables_:
+                for variable in self.defined_variables:
                     available_candidates.append({'name':variable, 'type':'V', 'class':'Variable'})
 
         
