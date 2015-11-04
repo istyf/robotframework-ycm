@@ -7,7 +7,7 @@ import string
 import subprocess
 
 
-_logger = logging.getLogger( __name__ )
+_logger = logging.getLogger(__name__)
 
 
 setting_table_names = ['Setting', 'Settings', 'Metadata']
@@ -100,6 +100,8 @@ class RobotFrameworkParser():
         self.defined_test_cases = set()
         self.defined_variables = set()
 
+        self.defined_library_aliases = {}
+
         self.imported_resources = set()
         self.imported_libraries = set()
 
@@ -162,6 +164,9 @@ class RobotFrameworkParser():
                     for v in parser.defined_variables:
                         self.defined_variables.add(v)
 
+                    for alias, library_name in parser.defined_library_aliases.iteritems():
+                        self.defined_library_aliases[alias] = library_name
+
                     for l in parser.imported_libraries:
                         self.imported_libraries.add(l)
                     for r in parser.imported_resources:
@@ -217,10 +222,20 @@ class RobotFrameworkParser():
 
 
     def _parse_library_setting(self, setting):
-        if len(setting) > 1:
+        setting_length = len(setting)
+
+        if setting_length > 1:
             library_name = setting[1]
+
             _logger.info('Adding keywords from library {0}'.format(library_name))
             self.imported_libraries.add(library_name)
+
+            if setting_length >= 4:
+                if str(setting[setting_length - 2]).upper() == "WITH NAME":
+                    alias = setting[setting_length - 1]
+
+                    _logger.info('Adding alias {0} for library {1}'.format(alias, library_name))
+                    self.defined_library_aliases[alias] = library_name
 
 
     def _parse_settings(self, lines):
@@ -287,6 +302,22 @@ class RobotFrameworkParser():
         return (None, [])
 
 
+    def _word_before_index(self, line, idx):
+        if idx > 0:
+            start_of_word = idx - 1
+
+            while str(line[start_of_word]).isalnum():
+                if start_of_word == 0:
+                    return line[0:idx]
+                else:
+                    start_of_word = start_of_word - 1
+
+            if start_of_word < (idx - 1):
+                return line[start_of_word + 1:idx]
+
+        return None
+
+
     def _context(self, line, line_num, idx):
         table_column = line.count('|', 0, idx)
 
@@ -311,6 +342,22 @@ class RobotFrameworkParser():
             if line[idx-1] == '|' or context['table'] == None:
                 return no_candidates
 
+            if line[idx-1] == '.':
+                library_alias = self._word_before_index(line, idx - 1)
+
+                if library_alias in self.defined_library_aliases:
+                    library_name = self.defined_library_aliases[library_alias]
+
+                    if library_name in library_keywords:
+                        keywords = library_keywords[library_name]
+
+                        if len(keywords) > 0:
+                            for kw in keywords:
+                                available_candidates.append({'name':kw, 'type':'K', 'class':library_name})
+
+                            return [{}, available_candidates]
+
+
             table_column = context['col']
             columns = context['columns']
 
@@ -327,6 +374,9 @@ class RobotFrameworkParser():
                         if lib not in self.imported_libraries:
                             available_candidates.append({'name':lib, 'type':'L', 'class':'Library'})
                 else:
+                    for alias, _ in self.defined_library_aliases.iteritems():
+                        available_candidates.append({'name':alias, 'type':'L', 'class':'Library'})
+
                     for lib in self.imported_libraries:
                         if lib in library_keywords:
                             keywords = library_keywords[lib]
