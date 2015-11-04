@@ -62,17 +62,36 @@ library_keywords = {
             'Should Not Contain Match', 'Sort List'
             ],
         'DateTime' : [
+            'Add Time To Date', 'Add Time To Time', 'Convert Date', 'Convert Time', 'Get Current Date',
+            'Subtract Date From Date', 'Subtract Time From Date', 'Subtract Time From Time'
             ],
         'Dialogs' : [
             'Execute Manual Step', 'Get Selection From User', 'Get Value From User', 'Pause Execution'
             ],
         'OperatingSystem' : [
+            'Append To Environment Variable', 'Append To File', 'Copy Directory', 'Copy File', 'Copy Files',
+            'Count Directories In Directory', 'Count Files In Directory', 'Count Items In Directory',
+            'Create Binary File', 'Create Directory', 'Create File', 'Directory Should Be Empty',
+            'Directory Should Exist', 'Directory Should Not Be Empty', 'Directory Should Not Exist', 'Empty Directory',
+            'Environment Variable Should Be Set', 'Environment Variable Should Not Be Set', 'File Should Be Empty',
+            'File Should Exist', 'File Should Not Be Empty', 'File Should Not Exist', 'Get Binary File',
+            'Get Environment Variable', 'Get Environment Variables', 'Get File', 'Get File Size', 'Get Modified Time',
+            'Grep File', 'Join Path', 'Join Paths', 'List Directories In Directory', 'List Directory',
+            'List Files In Directory', 'Log Environment Variables', 'Log File', 'Move Directory', 'Move File',
+            'Move Files', 'Normalize Path', 'Read Process Output', 'Remove Directory', 'Remove Environment Variable',
+            'Remove File', 'Remove Files', 'Run', 'Run And Return Rc', 'Run And Return Rc And Output',
+            'Set Environment Variable', 'Set Modified Time', 'Should Exist', 'Should Not Exist', 'Split Extension',
+            'Split Path', 'Start Process', 'Stop All Processes', 'Stop Process', 'Switch Process', 'Touch',
+            'Wait Until Created', 'Wait Until Removed'
             ],
         'Process' : [
-            ],
-        'Remote' : [
+            'Get Process Id', 'Get Process Object', 'Get Process Result', 'Is Process Running', 'Join Command Line',
+            'Process Should Be Running', 'Process Should Be Stopped', 'Run Process', 'Send Signal To Process',
+            'Split Command Line', 'Start Process', 'Switch Process', 'Terminate All Processes', 'Terminate Process',
+            'Wait For Process'
             ],
         'Screenshot' : [
+            'Set Screenshot Directory', 'Take Screenshot', 'Take Screenshot Without Embedding'
             ],
         'String' : [
             'Convert To Lowercase', 'Convert To Uppercase', 'Decode Bytes To String', 'Encode String To Bytes',
@@ -84,8 +103,21 @@ library_keywords = {
             'Split String', 'Split String From Right', 'Split String To Characters', 'Split To Lines'
             ],
         'Telnet' : [
+            'Close All Connections', 'Close Connection', 'Execute Command', 'Login', 'Open Connection', 'Read',
+            'Read Until', 'Read Until Prompt', 'Read Until Regexp', 'Set Default Log Level', 'Set Encoding',
+            'Set Newline', 'Set Prompt', 'Set Telnetlib Log Level', 'Set Timeout', 'Switch Connection', 'Write',
+            'Write Bare', 'Write Control Character', 'Write Until Expected Output'
             ],
         'XML' : [
+            'Add Element', 'Clear Element', 'Copy Element', 'Element Attribute Should Be',
+            'Element Attribute Should Match', 'Element Should Exist', 'Element Should Not Exist',
+            'Element Should Not Have Attribute', 'Element Text Should Be', 'Element Text Should Match',
+            'Element To String', 'Elements Should Be Equal', 'Elements Should Match', 'Evaluate Xpath',
+            'Get Child Elements', 'Get Element', 'Get Element Attribute', 'Get Element Attributes', 'Get Element Count',
+            'Get Element Text', 'Get Elements', 'Get Elements Texts', 'Log Element', 'Parse Xml', 'Remove Element',
+            'Remove Element Attribute', 'Remove Element Attributes', 'Remove Elements', 'Remove Elements Attribute',
+            'Remove Elements Attributes', 'Save Xml', 'Set Element Attribute', 'Set Element Tag', 'Set Element Text',
+            'Set Elements Attribute', 'Set Elements Tag', 'Set Elements Text'
             ]
         }
 
