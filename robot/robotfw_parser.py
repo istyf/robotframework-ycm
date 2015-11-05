@@ -18,6 +18,7 @@ keyword_table_names = ['Keyword', 'Keywords', 'User Keyword', 'User Keywords']
 valid_table_names = setting_table_names + variable_table_names + test_case_table_names + keyword_table_names
 
 setting_table_settings = ['Suite Setup', 'Suite Teardown', 'Test Setup', 'Test Teardown', 'Force Tags', 'Default Tags', 'Resource', 'Library']
+test_case_settings = ['Documentation', 'Tags', 'Setup', 'Precondition', 'Teardown', 'Postcondition', 'Template', 'Timeout']
 
 library_names = ['ArchiveLibrary', 'Collections', 'DateTime', 'Dialogs', 'OperatingSystem', 'Process', 'Remote', 'Screenshot', 'Selenium2Library', 'SSHLibrary', 'String', 'Telnet', 'XML']
 
@@ -455,13 +456,17 @@ class RobotFrameworkParser():
                     available_candidates.append({'name':setting, 'type':'S', 'class':'Setting'})
 
 
-            if table_column == 1:
+            elif table_column == 1:
                 if columns[0].strip() == 'Library':
                     # TODO: Check that we are in a settings table
                     for lib in library_names:
                         if lib not in self.imported_libraries:
                             available_candidates.append({'name':lib, 'type':'L', 'class':'Library'})
                 else:
+                    # TODO: Check that we are in a test case table
+                    for tcs in test_case_settings:
+                        available_candidates.append({'name':'[{0}]'.format(tcs), 'type':'S', 'class':'Test Case Setting'})
+
                     for alias, _ in self.defined_library_aliases.iteritems():
                         available_candidates.append({'name':alias, 'type':'L', 'class':'Library'})
 
@@ -475,7 +480,11 @@ class RobotFrameworkParser():
                         available_candidates.append({'name':kw, 'type':'k', 'class':'user defined'})
 
 
-            if table_column > 1:
+            elif table_column > 1:
+                if columns[1].strip() in ['[Template]', '[Setup]', '[Precondition]', '[Postcondition]', '[Teardown]']:
+                    for kw in self.defined_keywords:
+                        available_candidates.append({'name':kw, 'type':'k', 'class':'user defined'})
+
                 for variable in self.defined_variables:
                     available_candidates.append({'name':variable, 'type':'V', 'class':'Variable'})
 
