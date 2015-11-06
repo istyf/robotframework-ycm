@@ -186,6 +186,7 @@ class RobotFrameworkParser():
         self.parent_ = parent
 
         self.defined_keywords = set()
+        self.defined_tags = set()
         self.defined_test_cases = set()
         self.defined_variables = set()
 
@@ -246,6 +247,8 @@ class RobotFrameworkParser():
                     self.imported_resources.add(path)
                     parser = RobotFrameworkParser(path, contents, self)
 
+                    for tag in parser.defined_tags:
+                        self.defined_tags.add(tag)
                     for tc in parser.defined_test_cases:
                         self.defined_test_cases.add(tc)
                     for kw in parser.defined_keywords:
@@ -298,7 +301,8 @@ class RobotFrameworkParser():
 
     def _parse_keywords(self, lines):
         for l in range(0, len(lines)):
-            first_cell_content = str(lines[l][0])
+            cells = lines[l]
+            first_cell_content = str(cells[0])
 
             if first_cell_content.startswith('*'):
                 return lines[l:]
@@ -327,25 +331,40 @@ class RobotFrameworkParser():
                     self.defined_library_aliases[alias] = library_name
 
 
+    def _parse_tags(self, tags):
+        for tag in tags:
+            tag = tag.strip()
+            # Stop processing tags if we encounter a comment
+            if str(tag).startswith('#'):
+                return
+
+            self.defined_tags.add(tag)
+
+
     def _parse_settings(self, lines):
         for l in range(0, len(lines)):
-            first_cell_content = str(lines[l][0])
+            cells = lines[l]
+            first_cell_content = str(cells[0])
 
             if first_cell_content.startswith('*'):
                 return lines[l:]
 
             if first_cell_content == 'Resource':
-                if len(lines[l]) > 1:
-                    self._import_resource(lines[l][1])
+                if len(cells) > 1:
+                    self._import_resource(cells[1])
             elif first_cell_content == 'Library':
-                self._parse_library_setting(lines[l])
+                self._parse_library_setting(cells)
+            elif first_cell_content in ['Force Tags', 'Default Tags']:
+                if len(cells) > 1:
+                    self._parse_tags(cells[1:])
 
         return []
 
 
     def _parse_test_cases(self, lines):
         for l in range(0, len(lines)):
-            first_cell_content = str(lines[l][0])
+            cells = lines[l]
+            first_cell_content = str(cells[0])
 
             if first_cell_content.startswith('*'):
                 return lines[l:]
@@ -354,12 +373,19 @@ class RobotFrameworkParser():
                 _logger.info('Found test case {0}'.format(first_cell_content))
                 self.defined_test_cases.add(first_cell_content)
 
+            if len(cells) > 2:
+                second_cell_content = str(cells[1]).strip()
+
+                if second_cell_content in ['[Tags]', 'Set Tags']:
+                    self._parse_tags(cells[2:])
+
         return []
 
 
     def _parse_variables(self, lines):
         for l in range(0, len(lines)):
-            first_cell_content = str(lines[l][0])
+            cells = lines[l]
+            first_cell_content = str(cells[0])
 
             if first_cell_content.startswith('*'):
                 return lines[l:]
@@ -377,7 +403,7 @@ class RobotFrameworkParser():
                 first_cell_content = str(lines[l][0])
 
                 if first_cell_content.startswith('*'):
-                    first_cell_content = first_cell_content.strip('* ')
+                    first_cell_content = first_cell_content.strip('* ').title()
 
                     if first_cell_content in setting_table_names:
                         return ('Settings', lines[l+1:])
@@ -481,6 +507,12 @@ class RobotFrameworkParser():
 
 
             elif table_column > 1:
+                if columns[1].strip() in ['[Tags]', 'Set Tags']:
+                    for tag in self.defined_tags:
+                        available_candidates.append({'name':tag, 'type':'T', 'class':'Tag'})
+                    return [{}, available_candidates]
+
+
                 if columns[1].strip() in ['[Template]', '[Setup]', '[Precondition]', '[Postcondition]', '[Teardown]']:
                     for kw in self.defined_keywords:
                         available_candidates.append({'name':kw, 'type':'k', 'class':'user defined'})
